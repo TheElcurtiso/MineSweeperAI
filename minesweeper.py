@@ -204,4 +204,7 @@ class MinesweeperAI():
             1) have not already been chosen, and
             2) are not known to be mines
         """
-
+        random_move = (random.randrange(0, self.height - 1), random.randrange(0, self.width - 1))
+        while random_move in self.moves_made or random_move in self.mines:
+            random_move = (random.randrange(0, self.height - 1), random.randrange(0, self.width - 1))
+        return random_move
