@@ -189,34 +189,46 @@ class MinesweeperAI():
             5) add any new sentences to the AI's knowledge base
                if they can be inferred from existing knowledge
         """
+        # mark the cell as a move and mark the cell is safe
         self.moves_made.add(cell)
         self.mark_safe(cell)
+        # create a new sentence
         new_sentence = self.create_new_sentence(cell)
         self.knowledge.append(Sentence(new_sentence, count))
         current_size_of_knowledge_base = len(self.knowledge)
+        self.infer_new_sentences_based_on_existing_knowledge(current_size_of_knowledge_base)
+
+    def infer_new_sentences_based_on_existing_knowledge(self, current_size_of_knowledge_base):
         for i in range(0, current_size_of_knowledge_base):
             if i < len(self.knowledge) and self.knowledge[i].count == 0:
-                for j in range(0, len(self.knowledge[i].cells)):
-                    self.mark_safe(self.knowledge[i].cells.pop())
-                self.knowledge.remove(self.knowledge[i])
+                self.mark_additional_cells_as_safe(i)
             elif i < len(self.knowledge) and self.knowledge[i].count == len(self.knowledge[i].cells):
-                for j in range(0, len(self.knowledge[i].cells)):
-                    self.mark_mine(self.knowledge[i].cells.pop())
-                self.knowledge.remove(self.knowledge[i])
+                self.mark_additional_cells_as_mines(i)
             else:
-                for j in range(0, current_size_of_knowledge_base):
-                    if i < len(self.knowledge) and j < len(self.knowledge) and self.knowledge[i] == self.knowledge[j]:
-                        continue
-                    elif i < len(self.knowledge) and j < len(self.knowledge) and len(self.knowledge[i].cells) != 0 and self.knowledge[i].cells.issubset(
-                            self.knowledge[j].cells):
-                        new_sentence = Sentence(self.knowledge[j].cells - self.knowledge[i].cells,
-                                                self.knowledge[j].count - self.knowledge[i].count)
-                        if new_sentence not in self.knowledge:
-                            self.knowledge.append(new_sentence)
+                self.add_new_sentences_from_existing_knowledge(current_size_of_knowledge_base, i)
 
-        print("Current known mine locations: " + str(self.mines))
-        for sentence in self.knowledge:
-            print(sentence)
+    def mark_additional_cells_as_mines(self, i):
+        for j in range(0, len(self.knowledge[i].cells)):
+            self.mark_mine(self.knowledge[i].cells.pop())
+        self.knowledge.remove(self.knowledge[i])
+
+    def mark_additional_cells_as_safe(self, i):
+        for j in range(0, len(self.knowledge[i].cells)):
+            self.mark_safe(self.knowledge[i].cells.pop())
+        # the remove statements are just to clean out the knowledge to make it easier to debug
+        self.knowledge.remove(self.knowledge[i])
+
+    def add_new_sentences_from_existing_knowledge(self, current_size_of_knowledge_base, i):
+        for j in range(0, current_size_of_knowledge_base):
+            if i < len(self.knowledge) and j < len(self.knowledge) and self.knowledge[i] == self.knowledge[j]:
+                continue
+            elif i < len(self.knowledge) and j < len(self.knowledge) and len(self.knowledge[i].cells) != 0 and \
+                    self.knowledge[i].cells.issubset(
+                        self.knowledge[j].cells):
+                new_sentence = Sentence(self.knowledge[j].cells - self.knowledge[i].cells,
+                                        self.knowledge[j].count - self.knowledge[i].count)
+                if new_sentence not in self.knowledge:
+                    self.knowledge.append(new_sentence)
 
     def create_new_sentence(self, cell):
         new_sentence = set()
@@ -239,14 +251,11 @@ class MinesweeperAI():
         and self.moves_made, but should not modify any of those values.
         """
         if len(self.safes) != 0:
-            print("List of safe moves: " + str(self.safes))
-            print("List of moves made: " + str(self.moves_made))
             safe_move = self.safes.pop()
             while (safe_move in self.moves_made or safe_move in self.mines) and len(self.safes) != 0:
                 safe_move = self.safes.pop()
             if safe_move in self.moves_made:
                 return None
-            print("Latest safe move:" + str(safe_move))
             return safe_move
         return None
 
@@ -257,8 +266,6 @@ class MinesweeperAI():
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        print("Number of moves made so far (including mines found): " + str(len(self.moves_made) + len(self.mines)))
-        print("Number of squares in the grid: " + str(self.height * self.width))
         all_valid_moves = []
         for i in range(0, self.height):
             for j in range(0, self.width):
@@ -268,5 +275,4 @@ class MinesweeperAI():
             return None
         else:
             random_move = all_valid_moves[random.randrange(0, len(all_valid_moves))]
-            print("Random move: " + str(random_move))
             return random_move
