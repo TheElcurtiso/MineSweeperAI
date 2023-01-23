@@ -190,6 +190,7 @@ class MinesweeperAI():
                if they can be inferred from existing knowledge
         """
         self.moves_made.add(cell)
+        self.mark_safe(cell)
         new_sentence = self.create_new_sentence(cell)
         self.knowledge.append(Sentence(new_sentence, count))
         current_size_of_knowledge_base = len(self.knowledge)
@@ -201,6 +202,7 @@ class MinesweeperAI():
             elif i < len(self.knowledge) and self.knowledge[i].count == len(self.knowledge[i].cells):
                 for j in range(0, len(self.knowledge[i].cells)):
                     self.mark_mine(self.knowledge[i].cells.pop())
+                self.knowledge.remove(self.knowledge[i])
             else:
                 for j in range(0, current_size_of_knowledge_base):
                     if i < len(self.knowledge) and j < len(self.knowledge) and self.knowledge[i] == self.knowledge[j]:
@@ -212,6 +214,7 @@ class MinesweeperAI():
                         if new_sentence not in self.knowledge:
                             self.knowledge.append(new_sentence)
 
+        print("Current known mine locations: " + str(self.mines))
         for sentence in self.knowledge:
             print(sentence)
 
@@ -236,9 +239,14 @@ class MinesweeperAI():
         and self.moves_made, but should not modify any of those values.
         """
         if len(self.safes) != 0:
+            print("List of safe moves: " + str(self.safes))
+            print("List of moves made: " + str(self.moves_made))
             safe_move = self.safes.pop()
-            while safe_move in self.moves_made and len(self.safes) != 0:
+            while (safe_move in self.moves_made or safe_move in self.mines) and len(self.safes) != 0:
                 safe_move = self.safes.pop()
+            if safe_move in self.moves_made:
+                return None
+            print("Latest safe move:" + str(safe_move))
             return safe_move
         return None
 
@@ -249,10 +257,16 @@ class MinesweeperAI():
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        random_move = (random.randrange(0, self.height - 1), random.randrange(0, self.width - 1))
-        if len(self.moves_made) + len(self.mines) == self.height * self.width:
+        print("Number of moves made so far (including mines found): " + str(len(self.moves_made) + len(self.mines)))
+        print("Number of squares in the grid: " + str(self.height * self.width))
+        all_valid_moves = []
+        for i in range(0, self.height):
+            for j in range(0, self.width):
+                if (i, j) not in self.moves_made and (i, j) not in self.mines:
+                    all_valid_moves.append((i, j))
+        if len(all_valid_moves) == 0:
             return None
         else:
-            while random_move in self.moves_made or random_move in self.mines:
-                random_move = (random.randrange(0, self.height - 1), random.randrange(0, self.width - 1))
+            random_move = all_valid_moves[random.randrange(0, len(all_valid_moves))]
+            print("Random move: " + str(random_move))
             return random_move
