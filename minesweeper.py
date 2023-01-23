@@ -190,24 +190,30 @@ class MinesweeperAI():
                if they can be inferred from existing knowledge
         """
         self.moves_made.add(cell)
-
         new_sentence = self.create_new_sentence(cell)
         self.knowledge.append(Sentence(new_sentence, count))
-        for sentence in self.knowledge:
-            if sentence.count == 0:
-                for i in range(0, len(sentence.cells)):
-                    self.mark_safe(sentence.cells.pop())
-            elif sentence.count == len(sentence.cells):
-                for i in range(0, len(sentence.cells)):
-                    self.mark_mine(sentence.cells.pop())
+        current_size_of_knowledge_base = len(self.knowledge)
+        for i in range(0, current_size_of_knowledge_base):
+            if i < len(self.knowledge) and self.knowledge[i].count == 0:
+                for j in range(0, len(self.knowledge[i].cells)):
+                    self.mark_safe(self.knowledge[i].cells.pop())
+                self.knowledge.remove(self.knowledge[i])
+            elif i < len(self.knowledge) and self.knowledge[i].count == len(self.knowledge[i].cells):
+                for j in range(0, len(self.knowledge[i].cells)):
+                    self.mark_mine(self.knowledge[i].cells.pop())
             else:
-                for i in range(0, len(self.knowledge)):
-                    if sentence == self.knowledge[i]:
+                for j in range(0, current_size_of_knowledge_base):
+                    if i < len(self.knowledge) and j < len(self.knowledge) and self.knowledge[i] == self.knowledge[j]:
                         continue
-                    elif sentence.cells.issubset(self.knowledge[i].cells):
-                        new_cell_info = self.knowledge[i].cells - sentence.cells
-                        new_count_info = self.knowledge[i].count - sentence.count
-                        self.knowledge.append(Sentence(new_cell_info, new_count_info))
+                    elif i < len(self.knowledge) and j < len(self.knowledge) and len(self.knowledge[i].cells) != 0 and self.knowledge[i].cells.issubset(
+                            self.knowledge[j].cells):
+                        new_sentence = Sentence(self.knowledge[j].cells - self.knowledge[i].cells,
+                                                self.knowledge[j].count - self.knowledge[i].count)
+                        if new_sentence not in self.knowledge:
+                            self.knowledge.append(new_sentence)
+
+        for sentence in self.knowledge:
+            print(sentence)
 
     def create_new_sentence(self, cell):
         new_sentence = set()
@@ -233,7 +239,6 @@ class MinesweeperAI():
             safe_move = self.safes.pop()
             while safe_move in self.moves_made and len(self.safes) != 0:
                 safe_move = self.safes.pop()
-            print(safe_move)
             return safe_move
         return None
 
@@ -245,6 +250,9 @@ class MinesweeperAI():
             2) are not known to be mines
         """
         random_move = (random.randrange(0, self.height - 1), random.randrange(0, self.width - 1))
-        while random_move in self.moves_made or random_move in self.mines:
-            random_move = (random.randrange(0, self.height - 1), random.randrange(0, self.width - 1))
-        return random_move
+        if len(self.moves_made) + len(self.mines) == self.height * self.width:
+            return None
+        else:
+            while random_move in self.moves_made or random_move in self.mines:
+                random_move = (random.randrange(0, self.height - 1), random.randrange(0, self.width - 1))
+            return random_move
